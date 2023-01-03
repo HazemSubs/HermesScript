@@ -7,7 +7,5 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="C:/Users/Hazem/Desktop/Eclipse Projects/HermesScript/libs/swt.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Hazem/Desktop/Eclipse Projects/HermesScript/libs/selenium-chrome-driver-4.7.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Hazem/Desktop/Eclipse Projects/HermesScript/libs/selenium-server-4.7.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

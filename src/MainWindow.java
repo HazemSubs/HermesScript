@@ -44,7 +44,7 @@ public class MainWindow {
 	private IdAndSecuritySteps iSteps;
 	private OtherSteps oSteps;
 	
-	private String lastTicket;
+	private String lastTicket = "";
 	private Button hBtn;
 	private Button cfBtn;
 	private Button ssBtn;
@@ -97,7 +97,7 @@ public class MainWindow {
 		
 		notesLabel = new Label(leftComposite, SWT.NONE);
 		notesLabel.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
-		notesLabel.setBounds(10, 10, 200, 44);
+		notesLabel.setBounds(10, 10, 300, 44);
 		notesLabel.setText("Notes for the Night:");
 		
 		generalNotes = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
@@ -145,15 +145,25 @@ public class MainWindow {
 		ssBtn.setText("SS");
 		ssBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
 		ssBtn.setBounds(119, 630, 370, 44);
+		ssBtn.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				openURL("https://www.uwo.ca/");
+			}
+		});
 		
 		showLastTicketBtn = new Button(middleComposite, SWT.NONE);
 		showLastTicketBtn.setText("Show Last Ticket");
 		showLastTicketBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
 		showLastTicketBtn.setBounds(119, 730, 370, 44);
-		ssBtn.addSelectionListener(new SelectionAdapter() {
+		if (lastTicket.equals("")) showLastTicketBtn.setEnabled(false);
+		showLastTicketBtn.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				openURL("https://www.uwo.ca/");
+				if (!lastTicket.equals(""))
+				{
+					toggleNotesLastTicketView();
+				}
 			}
 		});
 		
@@ -177,6 +187,94 @@ public class MainWindow {
 		oSteps = new OtherSteps();
 		
 		this.askQuestion();
+	}
+	
+	private void initializeQuestionScreen() {
+		this.disposeComposites();
+		
+		leftComposite = new Composite(shell, SWT.BORDER);
+		leftComposite.setBounds(10, 10, 610, 950);
+		
+		ticketLabel = new Label(leftComposite, SWT.NONE);
+		ticketLabel.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
+		ticketLabel.setBounds(10, 10, 206, 44);
+		ticketLabel.setText("Ticket Information:");
+		
+		ticketInformationTextbox = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
+		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
+		ticketInformationTextbox.setBounds(10, 60, 588, 828);
+		
+		finishTicketBtn = new Button(leftComposite, SWT.NONE);
+		finishTicketBtn.setText("Finish Ticket");
+		finishTicketBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.BOLD));
+		finishTicketBtn.setBounds(10, 894, 588, 44);
+		finishTicketBtn.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				finishTicket();
+			}
+		});
+		
+		Button notesSwitch = new Button(leftComposite, SWT.CHECK);
+		notesSwitch.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
+		notesSwitch.setBounds(392, 10, 206, 44);
+		notesSwitch.setText("Notes View");
+		notesSwitch.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				toggleNotesView(notesSwitch);
+			}
+		});
+		
+		middleComposite = new Composite(shell, SWT.BORDER);
+		middleComposite.setBounds(640, 10, 610, 950);
+		
+		questionTextbox = new Text(middleComposite, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP );
+		questionTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
+		questionTextbox.setBounds(10, 60, 588, 142);
+		
+		middleLabel = new Label(middleComposite, SWT.NONE);
+		middleLabel.setAlignment(SWT.CENTER);
+		middleLabel.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
+		middleLabel.setBounds(10, 10, 588, 44);
+		
+		answerTextbox = new Text(middleComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
+		answerTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
+		answerTextbox.setBounds(10, 208, 588, 680);
+		answerTextbox.addKeyListener(new KeyAdapter()
+		{
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if ((e.keyCode == SWT.KEYPAD_CR || e.keyCode == SWT.CR) && (e.stateMask & SWT.MODIFIER_MASK) == SWT.CTRL)
+				{
+					submitAnswerBtn.notifyListeners(e.keyCode, new Event());
+				}
+			}
+		});
+		
+		submitAnswerBtn = new Button(middleComposite, SWT.NONE);
+		submitAnswerBtn.setBounds(10, 894, 588, 44);
+		submitAnswerBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.BOLD));
+		submitAnswerBtn.setText("Submit");
+		submitAnswerBtn.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (askQuestion() == false) return; // No more questions can be asked!
+				String temp = answerTextbox.getText().trim();
+				if (!temp.equals("") && (!temp.equals("\n")) && (!temp.equals("\n\n"))) ticketInformationTextbox.append(temp + "\n");
+				answerTextbox.setText("");
+				answerTextbox.setFocus();
+			}
+		});
+		
+		rightComposite = new Composite(shell, SWT.BORDER);
+		rightComposite.setBounds(1270, 10, 610, 950);
+		
+		tips = new Text(rightComposite, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
+		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
+		tips.setBounds(10, 10, 588, 468);
+		
+		answerTextbox.setFocus();
 	}
 
 	private boolean askQuestion() {
@@ -365,94 +463,6 @@ public class MainWindow {
 		}
 	}
 
-	private void initializeQuestionScreen() {
-		this.disposeComposites();
-		
-		leftComposite = new Composite(shell, SWT.BORDER);
-		leftComposite.setBounds(10, 10, 610, 950);
-		
-		ticketLabel = new Label(leftComposite, SWT.NONE);
-		ticketLabel.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
-		ticketLabel.setBounds(10, 10, 206, 44);
-		ticketLabel.setText("Ticket Information:");
-		
-		ticketInformationTextbox = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
-		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
-		ticketInformationTextbox.setBounds(10, 60, 588, 828);
-		
-		finishTicketBtn = new Button(leftComposite, SWT.NONE);
-		finishTicketBtn.setText("Finish Ticket");
-		finishTicketBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.BOLD));
-		finishTicketBtn.setBounds(10, 894, 588, 44);
-		finishTicketBtn.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				finishTicket();
-			}
-		});
-		
-		Button notesSwitch = new Button(leftComposite, SWT.CHECK);
-		notesSwitch.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
-		notesSwitch.setBounds(392, 10, 206, 44);
-		notesSwitch.setText("Notes View");
-		notesSwitch.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				toggleNotesView(notesSwitch);
-			}
-		});
-		
-		middleComposite = new Composite(shell, SWT.BORDER);
-		middleComposite.setBounds(640, 10, 610, 950);
-		
-		questionTextbox = new Text(middleComposite, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP );
-		questionTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
-		questionTextbox.setBounds(10, 60, 588, 142);
-		
-		middleLabel = new Label(middleComposite, SWT.NONE);
-		middleLabel.setAlignment(SWT.CENTER);
-		middleLabel.setFont(SWTResourceManager.getFont("Calibri Light", 14, SWT.NORMAL));
-		middleLabel.setBounds(10, 10, 588, 44);
-		
-		answerTextbox = new Text(middleComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
-		answerTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
-		answerTextbox.setBounds(10, 208, 588, 680);
-		answerTextbox.addKeyListener(new KeyAdapter()
-		{
-			@Override
-			public void keyReleased(KeyEvent e) {
-				if ((e.keyCode == SWT.KEYPAD_CR || e.keyCode == SWT.CR) && (e.stateMask & SWT.MODIFIER_MASK) == SWT.CTRL)
-				{
-					submitAnswerBtn.notifyListeners(e.keyCode, new Event());
-				}
-			}
-		});
-		
-		submitAnswerBtn = new Button(middleComposite, SWT.NONE);
-		submitAnswerBtn.setBounds(10, 894, 588, 44);
-		submitAnswerBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.BOLD));
-		submitAnswerBtn.setText("Submit");
-		submitAnswerBtn.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if (askQuestion() == false) return; // No more questions can be asked!
-				String temp = answerTextbox.getText().trim();
-				if (!temp.equals("") && (!temp.equals("\n")) && (!temp.equals("\n\n"))) ticketInformationTextbox.append(temp + "\n");
-				answerTextbox.setText("");
-				answerTextbox.setFocus();
-			}
-		});
-		
-		rightComposite = new Composite(shell, SWT.BORDER);
-		rightComposite.setBounds(1270, 10, 610, 950);
-		
-		tips = new Text(rightComposite, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
-		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
-		tips.setBounds(10, 10, 588, 468);
-		
-		answerTextbox.setFocus();
-	}
-
 	private void disposeComposites() {
 		if (!generalNotes.isDisposed()) this.saveNotes();
 		leftComposite.dispose();
@@ -507,6 +517,34 @@ public class MainWindow {
 			if (!submitAnswerBtn.isDisposed()) submitAnswerBtn.setVisible(true);
 			finishTicketBtn.setVisible(true);
 		}
+	}
+	
+	private void toggleNotesLastTicketView() {
+		showLastTicketBtn.setEnabled(false);
+		notesLabel.setText("Last Ticket's Information:");
+		saveNotes();
+		
+		Text previousTicketTextbox = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
+		previousTicketTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
+		previousTicketTextbox.setBounds(10, 60, 588, 828);
+		previousTicketTextbox.setText(lastTicket);
+		previousTicketTextbox.setEditable(false);
+		generalNotes.setVisible(false);
+		
+		Button backBtn = new Button(leftComposite, SWT.NONE);
+		backBtn.setText("Back to General Notes");
+		backBtn.setBounds(10, 894, 588, 44);
+		backBtn.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.BOLD));
+		backBtn.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				notesLabel.setText("Notes for the Night:");
+				previousTicketTextbox.dispose();
+				showLastTicketBtn.setEnabled(true);
+				generalNotes.setVisible(true);
+				backBtn.dispose();
+			}
+		});
 	}
 	
 	private void finishTicket() {
