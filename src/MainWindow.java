@@ -49,6 +49,8 @@ public class MainWindow {
 	private Button cfBtn;
 	private Button ssBtn;
 	private Button showLastTicketBtn;
+	
+//	private String name, studentNum, phoneNum;
 
 	/**
 	 * Launch the application.
@@ -179,14 +181,84 @@ public class MainWindow {
 	public void startTroubleshooting() {
 		// SPACIO
 		this.initializeQuestionScreen();
-		sSteps = new StartingSteps();
-		pSteps = new PhysicalSteps();
-		aSteps = new AdditionalSteps();
-		cSteps = new ConfigurationSteps();
-		iSteps = new IdAndSecuritySteps();
-		oSteps = new OtherSteps();
+		
+		InformationDialog dialog = new InformationDialog(shell, SWT.NONE);
+		String temp = (String) dialog.open(); // OPEN DIALOG TO ASK FOR ISSUE TYPE (WIRED, WIRELESS, GAMING, FREE FORM)
+		if (temp.equals("free form")) {
+			answerTextbox.setEditable(false);
+			submitAnswerBtn.setEnabled(false);
+			ticketInformationTextbox.setFocus();
+			return;
+		}
+		String spacioFileRequired = "data/" + temp + " template.txt"; // SET THE PATH HERE
+		data.setSpacioFilePath(spacioFileRequired);
+		data.openFile();
+		
+		sSteps = new StartingSteps(data);
+		pSteps = new PhysicalSteps(data);
+		aSteps = new AdditionalSteps(data);
+		cSteps = new ConfigurationSteps(data);
+		iSteps = new IdAndSecuritySteps(data);
+		oSteps = new OtherSteps(data);
+		
+		TroubleshootingSteps[] steps = new TroubleshootingSteps[6];
+		steps[0] = sSteps;
 		
 		this.askQuestion();
+	}
+	
+	private void askQuestion() {
+		if (!sSteps.isDone()) {
+			middleLabel.setText("Starting Scenario:");
+			this.askInStartingSteps();
+			if (!sSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("Starting Scenario:\n");
+				sSteps.setTicketHeadingPresent(true);
+			}
+		} else if (!pSteps.isDone()) {
+			middleLabel.setText("Physical Checks:");
+			this.askInPhysicalSteps();
+			if (!pSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("\nPhysical Checks:\n");
+				pSteps.setTicketHeadingPresent(true);
+			}
+		} else if (!aSteps.isDone()) {
+			middleLabel.setText("Additional Information:");
+			this.askInAdditionalSteps();
+			if (!aSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("\nAdditional Information:\n");
+				aSteps.setTicketHeadingPresent(true);
+			}
+		} else if (!cSteps.isDone()) {
+			middleLabel.setText("Configure Network:");
+			this.askInConfigurationSteps();
+			if (!cSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("\nConfigure Network:\n");
+				cSteps.setTicketHeadingPresent(true);
+			}
+		} else if (!iSteps.isDone()) {
+			middleLabel.setText("Identity and Security:");
+			this.askInIdAndSecuritySteps();
+			if (!iSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("\nIdentity and Security:\n");
+				iSteps.setTicketHeadingPresent(true);
+			}
+		} else if (!oSteps.isDone()) {
+			middleLabel.setText("Others:");
+			this.askInOtherSteps();
+			if (!oSteps.isTicketHeadingPresent()) {
+				ticketInformationTextbox.append("\nOthers:\n");
+				oSteps.setTicketHeadingPresent(true);
+			}
+		} else {
+			questionTextbox.setText("Finalize your ticket in the left textbox, submit it into Hermes and click the \"Finalize Ticket\" button here to close the ticket");
+			submitAnswerBtn.setText("");
+			tips.setText("");
+			ticketInformationTextbox.append("\nNEXT STEPS: ");
+			submitAnswerBtn.setEnabled(false);
+			answerTextbox.setEnabled(false);
+			ticketInformationTextbox.setFocus();
+		}
 	}
 	
 	private void initializeQuestionScreen() {
@@ -201,7 +273,7 @@ public class MainWindow {
 		ticketLabel.setText("Ticket Information:");
 		
 		ticketInformationTextbox = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
-		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
+		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
 		ticketInformationTextbox.setBounds(10, 60, 588, 828);
 		
 		finishTicketBtn = new Button(leftComposite, SWT.NONE);
@@ -259,11 +331,7 @@ public class MainWindow {
 		submitAnswerBtn.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (askQuestion() == false) return; // No more questions can be asked!
-				String temp = answerTextbox.getText().trim();
-				if (!temp.equals("") && (!temp.equals("\n")) && (!temp.equals("\n\n"))) ticketInformationTextbox.append(temp + "\n");
-				answerTextbox.setText("");
-				answerTextbox.setFocus();
+				submitAnswer();
 			}
 		});
 		
@@ -271,147 +339,103 @@ public class MainWindow {
 		rightComposite.setBounds(1270, 10, 610, 950);
 		
 		tips = new Text(rightComposite, SWT.BORDER | SWT.READ_ONLY | SWT.WRAP | SWT.V_SCROLL);
-		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
+		ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
 		tips.setBounds(10, 10, 588, 468);
 		
 		answerTextbox.setFocus();
 	}
+	
+	public void submitAnswer() {
+		String question = questionTextbox.getText();
+		String stringAnswer = answerTextbox.getText().trim();
+		
+		this.setQuestionAnswered(question);
+		answerTextbox.setText("");
+		answerTextbox.setFocus();
+		
+		if (!stringAnswer.equals("") && !stringAnswer.equals("\n")) ticketInformationTextbox.append(stringAnswer + "\n");
+		this.askQuestion();
+	}
 
-	private boolean askQuestion() {
-		if (!sSteps.isDone()) {
-			middleLabel.setText("Starting Scenario:");
-			this.askInStartingSteps();
-			if (!sSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("Starting Scenario:\n");
-				sSteps.setTicketHeadingPresent(true);
-			}
-		} else if (!pSteps.isDone()) {
-			middleLabel.setText("Physical Checks:");
-			this.askInPhysicalSteps();
-			if (!pSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("\nPhysical Checks:\n");
-				pSteps.setTicketHeadingPresent(true);
-			}
-		} else if (!aSteps.isDone()) {
-			middleLabel.setText("Additional Information:");
-			this.askInAdditionalSteps();
-			if (!aSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("\nAdditional Information:\n");
-				aSteps.setTicketHeadingPresent(true);
-			}
-		} else if (!cSteps.isDone()) {
-			middleLabel.setText("Configure Network:");
-			this.askInConfigurationSteps();
-			if (!cSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("\nConfigure Network:\n");
-				cSteps.setTicketHeadingPresent(true);
-			}
-		} else if (!iSteps.isDone()) {
-			middleLabel.setText("Identity and Security:");
-			this.askInIdAndSecuritySteps();
-			if (!iSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("\nIdentity and Security:\n");
-				iSteps.setTicketHeadingPresent(true);
-			}
-		} else if (!oSteps.isDone()) {
-			middleLabel.setText("Others:");
-			this.askInOtherSteps();
-			if (!oSteps.isTicketHeadingPresent()) {
-				ticketInformationTextbox.append("\nOthers:\n");
-				oSteps.setTicketHeadingPresent(true);
-			}
-		} else {
-			this.finishTicket();
-			return false;
-		}
-		return true;
+	private void setQuestionAnswered(String question) {
+		if (sSteps.setQuestionAnwsered(question)) return;
+		if (pSteps.setQuestionAnwsered(question)) return;
+		if (aSteps.setQuestionAnwsered(question)) return;
+		if (cSteps.setQuestionAnwsered(question)) return;
+		if (iSteps.setQuestionAnwsered(question)) return;
+		if (oSteps.setQuestionAnwsered(question)) return;
 	}
 
 	private void askInStartingSteps() {
 		QuestionNode[] questions = sSteps.getQuestions();
 		for (int i = 0; i < sSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
+				questionTextbox.setText(questions[i].getStringQuestion());
 				String tip = questions[i].getTips()[0];
 				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				tips.setText(tip);
-				questions[i].answered = true;
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
+				}
 				return;
 			}
 		}
 		sSteps.checkIfDone();
-		if (sSteps.isDone()) {
-			askQuestion();
-		}
 	}
 	
 	private void askInPhysicalSteps() {
 		QuestionNode[] questions = pSteps.getQuestions();
 		for (int i = 0; i < pSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
-				String tip = "";
-				if (questions[i].getNumOfTips() > 0) {
-					tip = questions[i].getTips()[0];
+				questionTextbox.setText(questions[i].getStringQuestion());
+				String tip = questions[i].getTips()[0];
+				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
 				}
-				if (questions[i].getNumOfTips() > 1) {
-					for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				}
-				tips.setText(tip);
-				questions[i].answered = true;
 				return;
 			}
 		}
 		pSteps.checkIfDone();
-		if (pSteps.isDone()) {
-			askQuestion();
-		}
 	}
 	
 	private void askInAdditionalSteps() {
 		QuestionNode[] questions = aSteps.getQuestions();
 		for (int i = 0; i < aSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
-				String tip = "";
-				if (questions[i].getNumOfTips() > 0) {
-					tip = questions[i].getTips()[0];
+				questionTextbox.setText(questions[i].getStringQuestion());
+				String tip = questions[i].getTips()[0];
+				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
 				}
-				if (questions[i].getNumOfTips() > 1) {
-					for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				}
-				tips.setText(tip);
-				questions[i].answered = true;
 				return;
 			}
 		}
 		aSteps.checkIfDone();
-		if (aSteps.isDone()) {
-			askQuestion();
-		}
 	}
 	
 	private void askInConfigurationSteps() {
 		QuestionNode[] questions = cSteps.getQuestions();
 		for (int i = 0; i < cSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
-				String tip = "";
-				if (questions[i].getNumOfTips() > 0) {
-					tip = questions[i].getTips()[0];
+				questionTextbox.setText(questions[i].getStringQuestion());
+				String tip = questions[i].getTips()[0];
+				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
 				}
-				if (questions[i].getNumOfTips() > 1) {
-					for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				}
-				tips.setText(tip);
-				questions[i].answered = true;
 				return;
 			}
 		}
 		cSteps.checkIfDone();
-		if (cSteps.isDone()) {
-			askQuestion();
-		}
 	}
 	
 
@@ -419,39 +443,32 @@ public class MainWindow {
 		QuestionNode[] questions = iSteps.getQuestions();
 		for (int i = 0; i < iSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
-				String tip = "";
-				if (questions[i].getNumOfTips() > 0) {
-					tip = questions[i].getTips()[0];
+				questionTextbox.setText(questions[i].getStringQuestion());
+				String tip = questions[i].getTips()[0];
+				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
 				}
-				if (questions[i].getNumOfTips() > 1) {
-					for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				}
-				tips.setText(tip);
-				questions[i].answered = true;
 				return;
 			}
 		}
 		iSteps.checkIfDone();
-		if (iSteps.isDone()) {
-			askQuestion();
-		}
 	}
 	
 	private void askInOtherSteps() {
 		QuestionNode[] questions = oSteps.getQuestions();
 		for (int i = 0; i < oSteps.getNumOfQuestions(); i++) {
 			if (!questions[i].answered) {
-				questionTextbox.setText(questions[i].getStringQuestion().replaceFirst("^\\* ", ""));
-				String tip = "";
-				if (questions[i].getNumOfTips() > 0) {
-					tip = questions[i].getTips()[0];
+				questionTextbox.setText(questions[i].getStringQuestion());
+				String tip = questions[i].getTips()[0];
+				for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
+				if (tip != null) {
+					tips.setText(tip);
+				} else {
+					tips.setText("");
 				}
-				if (questions[i].getNumOfTips() > 1) {
-					for (int j = 1; j < questions[i].getNumOfTips(); j++) tip = tip + "\n" + questions[i].getTips()[j];
-				}
-				tips.setText(tip);
-				questions[i].answered = true;
 				return;
 			}
 		}
@@ -505,7 +522,7 @@ public class MainWindow {
 			notesLabel.dispose();
 			
 			ticketInformationTextbox = new Text(leftComposite, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
-			ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 11, SWT.NORMAL));
+			ticketInformationTextbox.setFont(SWTResourceManager.getFont("Calibri Light", 12, SWT.NORMAL));
 			ticketInformationTextbox.setBounds(10, 60, 588, 828);
 			ticketInformationTextbox.setText(ticketString);
 			
@@ -552,7 +569,7 @@ public class MainWindow {
 		finishTicketConfirmation.setText("Confirmation of Ticket Closing");
 		finishTicketConfirmation.setMessage("Are you sure you want to close this ticket? (You may not be able to recover this ticket later)");
 		int answer = finishTicketConfirmation.open();
-		lastTicket = ticketInformationTextbox.getText();
+		if (!ticketInformationTextbox.getText().equals("") && !ticketInformationTextbox.getText().equals("Starting Scenario:\r\n")) lastTicket = ticketInformationTextbox.getText();
 		if (answer == SWT.YES) {
 			disposeComposites();
 			createContents();

@@ -1,19 +1,8 @@
 
 public class ConfigurationSteps extends TroubleshootingSteps {
 	
-	private int numOfQuestions;
-	private boolean done = false;
-	
-	public boolean isDone() {
-		return done;
-	}
-
-	public void setDone(boolean done) {
-		this.done = done;
-	}
-
-	public ConfigurationSteps() {
-		data = new DataManipulator();
+	public ConfigurationSteps(DataManipulator dataM) {
+		data = dataM;
 		questions = data.getQuestions("Configure Network:");
 		numOfQuestions = data.getNumOfQuestions(questions);
 	}
@@ -28,13 +17,6 @@ public class ConfigurationSteps extends TroubleshootingSteps {
 
 	public void setNumOfQuestions(int numOfQuestions) {
 		this.numOfQuestions = numOfQuestions;
-	}
-
-	public void checkIfDone() {
-		for (int i = 0; i < numOfQuestions; i++) {
-			if (!questions[i].answered) return;
-		}
-		setDone(true);
 	}
 
 }

@@ -5,15 +5,22 @@ import java.util.Scanner;
 public class DataManipulator {
 	
 	private String remindersFilePath = "data/reminders.txt";
-	private String spacioFilePath = "data/spacio.txt";
-	private File remindersFile = null;
-	private File spacioFile = null;
-	private Scanner fileScanner = null;
+	private String spacioFilePath;
+	private File remindersFile;
+	private File spacioFile;
+	private Scanner fileScanner;
 	private Random rand = new Random();
 	
 	public DataManipulator() {
 		remindersFile = new File(remindersFilePath);
-		spacioFile = new File(spacioFilePath);
+	}
+	
+	public String getSpacioFilePath() {
+		return spacioFilePath;
+	}
+
+	public void setSpacioFilePath(String spacioFilePath) {
+		this.spacioFilePath = spacioFilePath;
 	}
 	
 	public String getReminders() {
@@ -31,7 +38,7 @@ public class DataManipulator {
 		
 		return reminders;
 	}
-	
+
 	public int getNumOfReminders() {
 		int numOfReminders = 0;
 		
@@ -133,7 +140,7 @@ public class DataManipulator {
 		{
 			// Scan a question
 			Scanner scanner = new Scanner(questionsAndTips[i]);
-			String tempQuestion = scanner.nextLine();
+			String tempQuestion = scanner.nextLine().replaceFirst("^\\* ", "");
 			
 			// Find the tips
 			int tipIndex = 0;
@@ -155,14 +162,9 @@ public class DataManipulator {
 		return num;
 	}
 
-	public static void main(String[] args) {
-		DataManipulator d = new DataManipulator();
-		String scenario = "Starting Scenario:";
-		StartingSteps a = new StartingSteps();
-//		a.getQuestions();
-		System.out.println("123");
-		a.getQuestions();
-		System.out.println(d.getNumOfQuestions(d.getQuestions(scenario)));
+	public void openFile() {
+		spacioFile = new File(spacioFilePath);
+		
 	}
 
 }
