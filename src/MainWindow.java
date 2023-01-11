@@ -184,6 +184,7 @@ public class MainWindow {
 		
 		InformationDialog dialog = new InformationDialog(shell, SWT.NONE);
 		String temp = (String) dialog.open(); // OPEN DIALOG TO ASK FOR ISSUE TYPE (WIRED, WIRELESS, GAMING, FREE FORM)
+		if (temp == null) temp = "free form";
 		if (temp.equals("free form")) {
 			answerTextbox.setEditable(false);
 			submitAnswerBtn.setEnabled(false);
